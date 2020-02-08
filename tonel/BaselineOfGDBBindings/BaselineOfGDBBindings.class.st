@@ -17,9 +17,12 @@ BaselineOfGDBBindings >> baseline: spec [
 					spec
 						repository: 'github://kursjan/petitparser2' ].
 		].
-
 		spec
-			package: #'Phanide-GDB' with: [
+			baseline: #'OSIOEvents' with: [
+				spec
+					repository: 'github://ronsaldo/os-ioevents' ].
+		spec
+			package: #'GDB-Bindings' with: [
 				spec requires: #(#'OSIOEvents') , conditionalDeps
 			].
 	].
