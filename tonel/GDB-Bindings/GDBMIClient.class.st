@@ -275,7 +275,7 @@ GDBMIClient >> outputReadingProcessEntry [
 GDBMIClient >> processOutputLine: line [
 	| record |
 	record := GDBOutputParser parse: line.
-	record isPetitFailure ifTrue: [
+	record isPetit2Failure ifTrue: [
 		^ [
 			self error: 'Failed to parse gdb output record: ' , line printString
 		] fork
