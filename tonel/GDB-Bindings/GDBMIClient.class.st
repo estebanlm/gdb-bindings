@@ -265,10 +265,8 @@ GDBMIClient >> onThreadSelectedNotification: notificationData [
 GDBMIClient >> outputReadingProcessEntry [
 	| stdout line |
 	stdout := process stdout textStream.
-	[(line := stdout nextLine)] whileNotNil: [ 
-		self processOutputLine: line.
-	]
-
+	[ (line := stdout nextLine)] whileNotNil: [ 
+		self processOutputLine: line ]
 ]
 
 { #category : #'as yet unclassified' }

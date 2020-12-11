@@ -54,6 +54,8 @@ GDBEventHandler >> onLogOutput: aString [
 
 { #category : #'as yet unclassified' }
 GDBEventHandler >> onTargetErrorOutput: aString [
+	
+	aString crTrace.
 ]
 
 { #category : #'as yet unclassified' }

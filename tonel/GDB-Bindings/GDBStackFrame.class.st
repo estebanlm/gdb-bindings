@@ -102,6 +102,14 @@ GDBStackFrame >> line: anObject [
 ]
 
 { #category : #accessing }
+GDBStackFrame >> locals [ 
+
+	^ gdb 
+		getLocalsInThread: self thread 
+		frameLevel: self level
+]
+
+{ #category : #accessing }
 GDBStackFrame >> thread [
 	^ thread
 ]

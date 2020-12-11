@@ -9,20 +9,21 @@ Class {
 
 { #category : #'as yet unclassified' }
 GDBTranscriptOutputEventHandler >> onConsoleOutput: aString [
-	Transcript show: aString; cr.
+
+	Transcript show: aString withInternalLineEndings; cr.
 ]
 
 { #category : #'as yet unclassified' }
 GDBTranscriptOutputEventHandler >> onLogOutput: aString [
-	Transcript show: aString
+	Transcript show: aString withInternalLineEndings
 ]
 
 { #category : #'as yet unclassified' }
 GDBTranscriptOutputEventHandler >> onTargetErrorOutput: aString [
-	Transcript show: aString
+	Transcript show: aString withInternalLineEndings
 ]
 
 { #category : #'as yet unclassified' }
 GDBTranscriptOutputEventHandler >> onTargetOutput: aString [
-	Transcript show: aString
+	Transcript show: aString withInternalLineEndings
 ]
