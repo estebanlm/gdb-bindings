@@ -23,20 +23,25 @@ Class {
 		'useIORedirection',
 		'isRunning',
 		'isStopped',
-		'isStoppingForCommand'
+		'isStoppingForCommand',
+		'gdbCommand',
+		'programStdin',
+		'startProgramInPseudoTerminal'
 	],
 	#classVars : [
 		'AsyncExecHandlingMap',
-		'AsyncNotificationHandlingMap'
+		'AsyncNotificationHandlingMap',
+		'DefaultGdbCommand'
 	],
 	#pools : [
 		'LibOSIOEventsPool'
 	],
-	#category : #'GDB-Bindings'
+	#category : #'GDB-Bindings-IOSEvents'
 }
 
 { #category : #accessing }
 GDBMIClient class >> defaultGdbCommand [
+
 	^ DefaultGdbCommand ifNil: [DefaultGdbCommand := 'gdb -q --interpreter=mi']
 ]
 
@@ -159,6 +164,7 @@ GDBMIClient >> finishProcessExecution [
 
 { #category : #accessing }
 GDBMIClient >> gdbCommand [
+
 	^ gdbCommand ifNil: [ gdbCommand := self defaultGdbCommand ]
 ]
 
@@ -346,6 +352,7 @@ GDBMIClient >> quit [
 
 { #category : #'as yet unclassified' }
 GDBMIClient >> sendMessageToProgramStdin: message [
+
 	programStdin stdin ifNotNil: [:p |
 		p nextPutAll: message utf8Encoded
 	]
@@ -451,6 +458,7 @@ GDBMIClient >> startProgramErrorOutputReadingProcess [
 
 { #category : #accessing }
 GDBMIClient >> startProgramInPseudoTerminal [
+
 	^ startProgramInPseudoTerminal ifNil: [ startProgramInPseudoTerminal := false ]
 ]
 
