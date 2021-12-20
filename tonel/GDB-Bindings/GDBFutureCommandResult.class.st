@@ -10,6 +10,12 @@ Class {
 	#category : #'GDB-Bindings-FrontEnd'
 }
 
+{ #category : #'instance creation' }
+GDBFutureCommandResult class >> newToken: aToken [
+
+	^ self new token: aToken
+]
+
 { #category : #accessing }
 GDBFutureCommandResult >> resultClass [
 	^ self value resultClass

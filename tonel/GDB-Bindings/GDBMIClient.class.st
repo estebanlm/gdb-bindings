@@ -46,13 +46,11 @@ GDBMIClient class >> initialize [
 		'thread-group-exited' onThreadGroupExitedNotification:
 		'thread-created' onThreadCreatedNotification:
 		'thread-exited' onThreadExitedNotification:
-		'thread-selected' onThreadSelectedNotification:
-	).
+		'thread-selected' onThreadSelectedNotification:).
 	
 	AsyncExecHandlingMap := Dictionary newFromPairs: #(
 		running onExecRunningEvent:
-		stopped onExecStoppedEvent:
-	).
+		stopped onExecStoppedEvent:)
 ]
 
 { #category : #commands }
@@ -110,6 +108,12 @@ GDBMIClient >> execContinue [
 ]
 
 { #category : #'convenience commands' }
+GDBMIClient >> execFinish [
+
+	^ self mi: '-exec-finish'
+]
+
+{ #category : #'convenience commands' }
 GDBMIClient >> execInterrupt [
 	^ self mi: '-exec-interrupt'
 ]
@@ -131,10 +135,11 @@ GDBMIClient >> execStep [
 
 { #category : #private }
 GDBMIClient >> finishProcessExecution [
+
 	process finish.
 	outputReadingProcess ifNotNil: [ outputReadingProcess terminate ].
 	programOutputReadingProcess ifNotNil: [ programOutputReadingProcess terminate ].
-	programErrorReadingProcess ifNotNil: [ programErrorReadingProcess terminate ].
+	programErrorReadingProcess ifNotNil: [ programErrorReadingProcess terminate ]
 ]
 
 { #category : #accessing }
@@ -181,6 +186,7 @@ GDBMIClient >> initializeGDBMI [
 
 { #category : #commands }
 GDBMIClient >> mi: aString [
+
 	^ self mi: aString withResult: self newFutureCommandResult
 ]
 
@@ -470,5 +476,6 @@ GDBMIClient >> visitTargetStreamRecord: record [
 
 { #category : #'convenience commands' }
 GDBMIClient >> workingDirectory: workingDirectory [
+
 	^ self mi: ('-environment-cd {1}' format: {workingDirectory asCStringForGDB})
 ]
