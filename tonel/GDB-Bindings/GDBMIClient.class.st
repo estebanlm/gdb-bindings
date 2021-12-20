@@ -35,6 +35,16 @@ Class {
 	#category : #'GDB-Bindings'
 }
 
+{ #category : #accessing }
+GDBMIClient class >> defaultGdbCommand [
+	^ DefaultGdbCommand ifNil: [DefaultGdbCommand := 'gdb -q --interpreter=mi']
+]
+
+{ #category : #accessing }
+GDBMIClient class >> defaultGdbCommand: aString [
+	DefaultGdbCommand := aString
+]
+
 { #category : #'class initialization' }
 GDBMIClient class >> initialize [
 	AsyncNotificationHandlingMap := Dictionary newFromPairs: #(
@@ -72,6 +82,11 @@ GDBMIClient >> createBreakpointInFile: fileName atLine: line [
 	].
 
 	^ GDBBreakpoint for: self from: breakpointCommand results
+]
+
+{ #category : #accessing }
+GDBMIClient >> defaultGdbCommand [
+	^ self class defaultGdbCommand
 ]
 
 { #category : #events }
@@ -144,8 +159,24 @@ GDBMIClient >> finishProcessExecution [
 
 { #category : #accessing }
 GDBMIClient >> gdbCommand [
-	^ 'gdb -q --interpreter=mi'
-	
+	^ gdbCommand ifNil: [ gdbCommand := self defaultGdbCommand ]
+]
+
+{ #category : #accessing }
+GDBMIClient >> gdbCommand: aString [
+	gdbCommand := aString
+]
+
+{ #category : #accessing }
+GDBMIClient >> gdbSpawnShellCommand [
+	| command |
+	command := self gdbCommand.
+	self assert: (command isString and: [ command isNotEmpty ]).
+	Smalltalk os isUnix ifTrue: [
+		command := 'unset LD_LIBRARY_PATH && unset DYLD_LIBRARY_PATH && ' , command
+	].
+
+	^ command
 ]
 
 { #category : #'convenience commands' }
@@ -290,30 +321,34 @@ GDBMIClient >> processOutputLine: line [
 
 { #category : #'as yet unclassified' }
 GDBMIClient >> programErrorOutputReadingProcess [
-	| stderr line |
-	stderr := process extraStderr textStream.
-	self flag: 'FIXME: Do not read per line here.'.
-	[(line := stderr nextLine)] whileNotNil: [ 
-		eventHandler onTargetErrorOutput: line; onTargetErrorOutput: String cr.
+	| stdout data |
+	stdout := process extraStderr.
+	[(data := stdout next: 4096) size > 0] whileTrue: [ 
+		eventHandler onTargetErrorOutput: data utf8Decoded.
 	]
 
 ]
 
 { #category : #'as yet unclassified' }
 GDBMIClient >> programOutputReadingProcess [
-	| stdout line |
-	stdout := process extraStdout textStream.
-	self flag: 'FIXME: Do not read per line here.'.
-	[(line := stdout nextLine)] whileNotNil: [ 
-		eventHandler onTargetOutput: line; onTargetOutput: String cr
+	| stdout data |
+	stdout := process extraStdout.
+	[(data := stdout next: 4096) size > 0] whileTrue: [
+		eventHandler onTargetOutput: data utf8Decoded.
 	]
-
 ]
 
 { #category : #'convenience commands' }
 GDBMIClient >> quit [
 	self mi: '-gdb-exit'.
 	^ self finishProcessExecution
+]
+
+{ #category : #'as yet unclassified' }
+GDBMIClient >> sendMessageToProgramStdin: message [
+	programStdin stdin ifNotNil: [:p |
+		p nextPutAll: message utf8Encoded
+	]
 ]
 
 { #category : #accessing }
@@ -327,6 +362,18 @@ GDBMIClient >> separateStdoutFromStderr: aBoolean [
 ]
 
 { #category : #'convenience commands' }
+GDBMIClient >> setEnvironmentVariable: environmentVariable value: value [
+	self cli: ('set environment {1} = {2}' format: { environmentVariable asString . value asString })
+]
+
+{ #category : #'convenience commands' }
+GDBMIClient >> setEnvironmentVariables: environmentVariables [
+	environmentVariables keysAndValuesDo: [ :key :value |
+		self setEnvironmentVariable: key value: value
+	]
+]
+
+{ #category : #'convenience commands' }
 GDBMIClient >> setProgramArguments: arguments [
 	^ self mi: (ByteString streamContents: [:out |
 		out nextPutAll: '-exec-arguments'.
@@ -336,7 +383,7 @@ GDBMIClient >> setProgramArguments: arguments [
 		].
 	
 		self useIORedirection ifTrue: [
-			self separateStdoutFromStderr ifTrue: [ 
+			(self separateStdoutFromStderr or: [self startProgramInPseudoTerminal]) ifTrue: [
 				out nextPutAll: ' <&3 >&4 2>&5'
 			] ifFalse: [ 
 				out nextPutAll: ' <&3 >&4 2>&4'
@@ -350,10 +397,27 @@ GDBMIClient >> setProgramFileAndSymbols: programFileName [
 	^ self mi: ('-file-exec-and-symbols {1}' format: {programFileName asCStringForGDB})
 ]
 
+{ #category : #initialization }
+GDBMIClient >> setProgramTerminalRows: rows columns: columns [
+	self startProgramInPseudoTerminal ifFalse: [ ^ self ].
+	process ifNil: [ ^ self ].
+	process extraStdout ifNotNil: [ :p | p setTerminalRows: rows columns: columns ]
+]
+
+{ #category : #'convenience commands' }
+GDBMIClient >> setWorkingDirectory: workingDirectory [
+	^ self mi: ('-environment-cd {1}' format: {workingDirectory asCStringForGDB})
+]
+
 { #category : #commands }
 GDBMIClient >> start [
-	| programStdin |
-	process := OSIOEventsDriver uniqueInstance spawnShell: self gdbCommand flags: OS_IOEVENTS_SPAWN_FLAGS_OPEN_EXTRA_PIPES.
+	| spawnFlags |
+	spawnFlags := OS_IOEVENTS_SPAWN_FLAGS_OPEN_EXTRA_PIPES.
+	(self separateStdoutFromStderr not and: [self startProgramInPseudoTerminal]) ifTrue: [
+		spawnFlags := spawnFlags | OS_IOEVENTS_SPAWN_FLAGS_OPEN_EXTRA_PIPES_IN_PSEUDO_TERMINAL
+	].
+
+	process := OSIOEventsDriver uniqueInstance spawnShell: self gdbSpawnShellCommand flags: spawnFlags.
 	session := Smalltalk session.
 	
 	mutex := Semaphore forMutualExclusion.
@@ -362,12 +426,12 @@ GDBMIClient >> start [
 
 	outputReadingProcess := self startOutputReadingProcess.
 	programOutputReadingProcess := self startProgramOutputReadingProcess.
-	self separateStdoutFromStderr ifTrue: [ 
+	self separateStdoutFromStderr ifTrue: [
 		programErrorReadingProcess := self startProgramErrorOutputReadingProcess.
 	].
 	
 	stdin := process stdin textStream.
-	programStdin := process extraStdin textStream.
+	programStdin := process extraStdin.
 	self initializeGDBMI
 ]
 
@@ -383,6 +447,16 @@ GDBMIClient >> startProgramErrorOutputReadingProcess [
 	^ [
 		self programErrorOutputReadingProcess
 	] fork
+]
+
+{ #category : #accessing }
+GDBMIClient >> startProgramInPseudoTerminal [
+	^ startProgramInPseudoTerminal ifNil: [ startProgramInPseudoTerminal := false ]
+]
+
+{ #category : #accessing }
+GDBMIClient >> startProgramInPseudoTerminal: aBoolean [
+	startProgramInPseudoTerminal := aBoolean
 ]
 
 { #category : #'as yet unclassified' }
