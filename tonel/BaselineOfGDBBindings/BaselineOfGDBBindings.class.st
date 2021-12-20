@@ -8,22 +8,11 @@ Class {
 BaselineOfGDBBindings >> baseline: spec [
 	<baseline>
 
-	| conditionalDeps |
 	spec for: #common do: [
-		conditionalDeps := #().
-		Smalltalk globals at: #PP2CompositeNode ifAbsent: [ 
-			conditionalDeps := { #'PetitParser2Core' }.
-			spec baseline: #'PetitParser2Core' with: [
-					spec
-						repository: 'github://kursjan/petitparser2' ].
-		].
-		spec
-			baseline: #'OSIOEvents' with: [
-				spec
-					repository: 'github://ronsaldo/os-ioevents' ].
-		spec
-			package: #'GDB-Bindings' with: [
-				spec requires: #(#'OSIOEvents') , conditionalDeps
-			].
-	].
+		spec baseline: #'PetitParser2Core' with: [
+			spec 
+				repository: 'github://kursjan/petitparser2';
+				loads: 'PetitParser2' ] ].
+		spec package: #'GDB-Bindings' with: [
+				spec requires: #(#'PetitParser2Core') ].
 ]
