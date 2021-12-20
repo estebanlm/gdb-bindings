@@ -32,7 +32,7 @@ Class {
 	#pools : [
 		'LibOSIOEventsPool'
 	],
-	#category : #'GDB-Bindings-IOSEvents'
+	#category : #'GDB-Bindings'
 }
 
 { #category : #'class initialization' }
