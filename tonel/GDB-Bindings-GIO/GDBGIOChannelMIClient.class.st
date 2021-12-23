@@ -140,7 +140,7 @@ GDBGIOChannelMIClient >> gdbCommand [
 	^ '/usr/bin/gdb'
 ]
 
-{ #category : #accessing }
+{ #category : #'accessing - threads' }
 GDBGIOChannelMIClient >> getLocalsInThread: threadId frameLevel: frameLevel [
 	| variables |
 	
@@ -148,7 +148,7 @@ GDBGIOChannelMIClient >> getLocalsInThread: threadId frameLevel: frameLevel [
 	^ (variables at: #variables) collect: [ :var | GDBVariable for: self from: var ]
 ]
 
-{ #category : #accessing }
+{ #category : #'accessing - threads' }
 GDBGIOChannelMIClient >> getStackTraceForThread: threadId [
 	| trace frames |
 	
