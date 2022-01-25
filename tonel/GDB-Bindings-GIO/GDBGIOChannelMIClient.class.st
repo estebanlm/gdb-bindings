@@ -406,7 +406,7 @@ GDBGIOChannelMIClient >> setWorkingDirectory: aString [
 { #category : #starting }
 GDBGIOChannelMIClient >> start [
 
-	process := GIOProcess 
+	process := GIOPipedProcess 
 		spawn: self gdbCommand 
 		arguments: #('-i=mi')
 		flags: GSpawnFlags G_SPAWN_DO_NOT_REAP_CHILD.
