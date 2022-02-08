@@ -398,6 +398,12 @@ GDBGIOChannelMIClient >> setProgramFileAndSymbols: programFileName [
 ]
 
 { #category : #accessing }
+GDBGIOChannelMIClient >> setProgramPid: aPid [
+
+	^ self mi: ('-target-attach {1}' format: { aPid })
+]
+
+{ #category : #accessing }
 GDBGIOChannelMIClient >> setWorkingDirectory: aString [
 
 	^ self mi: ('-environment-cd {1}' format: { aString asCStringForGDB } )
